@@ -1,0 +1,46 @@
+data:
+  time_column: "ts"
+  label_column: "hypothesis"
+  binary_label_column: "is_attack"
+  dataset_column: "dataset"
+  cloud_column: "cloud"
+  session_keys: ["principal_id", "cloud"]
+
+dirichlet:
+  hypotheses:
+    - BENIGN
+    - CREDENTIAL_MISUSE
+    - PRIV_ESC
+    - LATERAL_MOVEMENT
+    - DATA_EXFILTRATION
+    - DEFENSE_EVASION
+    - NETWORK_INTRUSION
+
+risk_weights:
+  BENIGN: 0.0
+  CREDENTIAL_MISUSE: 0.6
+  PRIV_ESC: 0.7
+  LATERAL_MOVEMENT: 0.8
+  DATA_EXFILTRATION: 1.0
+  DEFENSE_EVASION: 0.8
+  NETWORK_INTRUSION: 0.7
+
+split:
+  train: 0.70
+  val: 0.10
+  test: 0.20
+
+tuning:
+  tau_grid: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.60, 0.70, 0.80, 0.90]
+  # tau_low_grid: [0.05, 0.10, 0.15, 0.20, 0.25]
+  # tau_high_grid: [0.20, 0.25, 0.30, 0.35, 0.40, 0.50]
+  #u_quantiles: [0.50, 0.60, 0.70, 0.80, 0.90, 0.95]
+  tau_low_grid:  [0.05, 0.10, 0.15, 0.20]
+  tau_high_grid: [0.20, 0.25, 0.30, 0.35]
+  u_quantiles: [0.70, 0.80, 0.90, 0.95, 0.98]
+  # Optional: constrain threshold search to keep FPR below this value
+  # fpr_max: 0.15
+
+
+session_eval:
+  contain_within_n_events: 3

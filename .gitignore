@@ -1,0 +1,110 @@
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# Python cache / build
+# =========================
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+pip-wheel-metadata/
+
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# =========================
+# Virtual environments
+# =========================
+.venv/
+venv/
+env/
+ENV/
+.conda/
+conda-env/
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+log/
+
+# =========================
+# Results / Outputs / Artifacts (DEQ-ZT)
+# =========================
+results/
+outputs/
+artifacts/
+runs/
+reports/
+
+# Common generated tables/figures
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.pdf
+*.csv
+*.parquet
+
+# If you WANT to version control certain result files,
+# delete them from this ignore list and commit explicitly.
+
+# =========================
+# Model / data artifacts
+# =========================
+models/
+checkpoints/
+*.pt
+*.pth
+*.joblib
+*.pkl
+
+# =========================
+# Local datasets / big files
+# =========================
+data/
+datasets/
+*.zip
+*.7z
+*.tar
+*.tar.gz
+
+# =========================
+# Secrets / config overrides
+# =========================
+.env
+.env.*
+secrets/
+*secret*
+*key*
+*.pem
+*.crt
+*.pfx
+*.p12
+
+# =========================
+# Windows-specific python tooling
+# =========================
+*.stackdump
