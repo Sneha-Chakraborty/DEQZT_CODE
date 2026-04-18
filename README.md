@@ -1,101 +1,75 @@
-# DEQ-ZT : Dirichlet-Evidential, Quantum-Resilient Zero Trust Control-Loop Framework in Multi-Cloud Environments
+# DEQZT patched v3
 
-### DEQZT: Benchmarking Codebase (2 Baselines + Proposed Dirichlet Uncertainty-Aware ZT Loop)
+This version focuses on **scientifically safer benchmarking** for DEQ-ZT instead of inflating results.
 
-This project evaluates:
-1) **Isolation Forest baseline**
-2) **Static rule-based Zero Trust baseline**
-3) **Proposed DEQZT**: Dirichlet mean + uncertainty-aware ZT decision loop (step-up / revoke)
+## What is new
 
-It consumes a single input file:
-- `dirichlet_training.parquet` (your unified Dirichlet-ready training table)
+- stronger baselines:
+  - Static_Rules
+  - IsolationForest
+  - LogisticRegression
+  - RandomForest
+  - MLP_Softmax
+  - DEQZT
+- extra metrics and plots:
+  - macro_f1, macro_precision, macro_recall, balanced_accuracy
+  - decision precision, recall, specificity, MCC
+  - true positive rate (TPR), false positive rate (FPR)
+  - RZDU
+  - session intervention, containment, benign disruption, step-up rate, deny rate
+- leakage and split-quality checks:
+  - duplicate removal before split
+  - session/group-aware stratified splitting
+  - minimum validation/test support enforcement per label
+  - leakage report for feature overlap, session overlap, suspicious feature names
+- per-cloud confusion matrices
+- PQC benchmarking kept separate from ML benchmarking
+- DEQZT tuning now uses the manuscript-style uncertainty-weighted risk fusion:
+  - `risk = (1 - u) * base_risk + beta_u * u`
 
-## 0) Folder layout to use on Windows
-Recommended:
-- `D:\DEQZT\data\dirichlet_training.parquet`
-- Put this codebase anywhere, e.g. `D:\DEQZT_CODE\`
+## Important note
 
-## 1) Install (PowerShell)
+This code **does not rig** DEQZT to beat all baselines. It is designed to make the comparison more valid and easier to debug.
+
+## How to run
+
 ```powershell
-cd <this_folder>
 python -m venv .venv
 .\.venv\Scripts\activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+$env:DEQZT_TORCH_THREADS="1"
+$env:OMP_NUM_THREADS="1"
+$env:MKL_NUM_THREADS="1"
+$env:OPENBLAS_NUM_THREADS="1"
+python src\run_all.py --data D:\DEQZT_Dataset\output --config configs\config.yaml --outdir results
+python src\compare_crypto.py --pqc-summary results\tables\pqc_summary.json --eval-trace results\tables\eval_trace.csv --session-metrics results\tables\metrics_session_level.csv --out results\tables
 ```
 
-### Notes on PQC dependency
-This codebase uses **PQCrypto** for ML-KEM-768 and ML-DSA-65. The package name is `pqcrypto`.
+## Main outputs
 
-If you only want to run the analytics + baselines (and skip the PQC session-rotation step), you can run with:
-```powershell
-python src\run_all.py --data D:\DEQZT\data\dirichlet_training.parquet --config configs\config.yaml --skip-pqc
-```
-
-## 2) Run end-to-end
-Edit `configs/config.yaml` if you want to change weights / sweep ranges.
-
-Then run:
-```powershell
-python src\run_all.py --data D:\DEQZT\data\dirichlet_training.parquet --config configs\config.yaml
-```
-
-Outputs:
 - `results/tables/metrics_event_level.csv`
+- `results/tables/metrics_event_multiclass.csv`
+- `results/tables/metrics_event_binary_policy.csv`
+- `results/tables/metrics_event_binary_label.csv`
+- `results/tables/metrics_event_binary_deny.csv`
 - `results/tables/metrics_session_level.csv`
-- `results/figures/*.png`
+- `results/tables/leakage_report.json`
+- `results/tables/leakage_checks.csv`
+- `results/tables/split_label_distribution.csv`
 - `results/tables/thresholds.json`
-## 3) Crypto overhead add-on (PQC vs Classical) for paper tables
-
-After you have run the full pipeline once (so `results/tables/pqc_summary.json` exists), generate a
-"PQC cost vs classical" comparison table:
-
-```powershell
-python src\compare_crypto.py --pqc-summary results\tables\pqc_summary.json --out results\tables --n 200
-```
-
-This produces:
-- `results/tables/classical_summary_x25519_ed25519.json`
-- `results/tables/classical_summary_p256_ecdsa_p256.json`
 - `results/tables/crypto_comparison.csv`
-- `results/tables/crypto_comparison.tex` (ready to paste into IEEE/LNCS LaTeX)
+- `results/figures/*.png`
 
-Notes:
-- Classical baseline models an ECDHE key agreement + signature over the transcript (microbenchmark, not full TLS).
-- Total wire bytes are approximated as (ECDHE public keys exchanged) + (signature).
+## Quick smoke test
 
-
-## 4) Security/control-loop crypto metrics (10-year scenario + rotation analytics)
-
-The pipeline now writes an evaluation trace used to compute control-loop metrics:
-- `results/tables/eval_trace.csv`  (risk, uncertainty, decisions, session id, attack indicator)
-
-After running `src/run_all.py`, generate:
-- Raw overhead table: `crypto_comparison.csv` / `crypto_comparison.tex`
-- Security/control tables: `crypto_security_control_metrics.csv`,
-  `crypto_security_control_metrics_econ.tex`,
-  `crypto_security_control_metrics_control.tex`
-
-Example (10-year scenario):
 ```powershell
-python src\compare_crypto.py ^
-  --pqc-summary results\tables\pqc_summary.json ^
-  --eval-trace results\tables\eval_trace.csv ^
-  --session-metrics results\tables\metrics_session_level.csv ^
-  --out results\tables ^
-  --n 200 ^
-  --horizon-years 10 ^
-  --impact 1.0 ^
-  --p-break-classical 0.30 ^
-  --p-break-pqc 0.05 ^
-  --ttl-steps 10
+python src\run_all.py --data sample_data\demo_dirichlet_training.csv --config configs\config.yaml --skip-pqc --outdir results_demo
 ```
 
-### Metrics included in the security/control tables
-- Expected Loss: `E[L] = P(broken within 10y) * Impact`
-- Loss Remaining / Loss Reduction (%)
-- Rotation Coverage Gain (high-risk coverage × survival probability)
-- Risk-Weighted Security Gain (risk-weighted coverage × survival probability)
-- Detection-to-Rotation delay (P95 in steps; and seconds if timestamps are available)
-- Crypto overhead per attack session contained (Bytes/Contain, Ms/Contain)
-- Rotation selectivity: precision and recall w.r.t. attack-labeled events
+
+Memory hotfix: high-cardinality categorical columns are now filtered before one-hot encoding. LogisticRegression uses sparse encoding; RandomForest and MLP only encode very low-cardinality categories.
+
+
+Additional PQC figure generated by `python src\compare_crypto.py ...`:
+- `results\figures\crypto_overhead_grouped_bar.png` (Avg latency, P95 latency, Total byte overhead, Verification success grouped chart).

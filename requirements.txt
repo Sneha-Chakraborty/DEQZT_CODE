@@ -10,3 +10,7 @@ cryptography>=42.0.0
 # PQC (ML-KEM / ML-DSA) bindings used by src/pqc/*
 # Tested with pqcrypto 0.4.0 (ships Windows cp313 wheels).
 pqcrypto>=0.4.0
+
+# Evidential Deep Learning (neural EDL)
+torch>=2.2.0
+joblib>=1.3.0

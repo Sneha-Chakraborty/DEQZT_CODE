@@ -1,0 +1,10 @@
+{
+  "mode": "time",
+  "train_clouds": null,
+  "test_cloud": null,
+  "n_total": 240000,
+  "n_after_dedup": 240000,
+  "n_train": 169775,
+  "n_val": 23362,
+  "n_test": 46863
+}

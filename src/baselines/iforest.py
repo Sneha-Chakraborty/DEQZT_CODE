@@ -14,11 +14,24 @@ def train_isolation_forest(train_df: pd.DataFrame):
       model: sklearn Pipeline
       meta: dict with num_cols + scaling stats to map anomaly risk into [0,1]
     """
-    num_cols = [c for c in train_df.columns if c.startswith("e__")]
-    f_cols = [c for c in train_df.columns if c.startswith("f__")]
+    # Prefer the project's feature prefixes, but fall back to all numeric telemetry columns
+    # so the baseline still runs on alternative normalized parquet schemas.
+    num_cols = [c for c in train_df.columns if str(c).startswith("e__")]
+    f_cols = [c for c in train_df.columns if str(c).startswith("f__")]
     num_cols = num_cols + f_cols[:50]
+
     if not num_cols:
-        raise ValueError("No numeric columns found for Isolation Forest (need e__* or f__*).")
+        num_cols = [
+            c
+            for c in train_df.select_dtypes(include=["number", "bool"]).columns
+            if not str(c).startswith("p__") and str(c) not in {"uncertainty_u", "S"}
+        ]
+
+    if not num_cols:
+        raise ValueError(
+            "No usable numeric columns found for Isolation Forest. "
+            "Fix: ensure your parquet has numeric telemetry features, or add e__*/f__* columns."
+        )
 
     pipe = Pipeline(steps=[
         ("imputer", SimpleImputer(strategy="median")),

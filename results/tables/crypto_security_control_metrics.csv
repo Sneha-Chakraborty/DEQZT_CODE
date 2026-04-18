@@ -1,0 +1,4 @@
+Scheme,horizon_years,p_break_10y,survival_prob_10y,expected_loss_10y,loss_remaining,loss_reduction_pct,rotation_coverage_gain,risk_weighted_security_gain,n_rotations,rotation_precision,rotation_recall,high_risk_coverage,risk_weighted_coverage,det_to_rot_mean_steps,det_to_rot_p95_steps,det_to_rot_mean_s,det_to_rot_p95_s,bytes_per_attack_session_contained,ms_per_attack_session_contained
+PQC: ML-KEM-768 + ML-DSA-65,10.0,0.05,0.95,0.05,0.16666666666666669,83.33333333333333,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+Classical: ECDHE-P256 + ECDSA_P256,10.0,0.3,0.7,0.3,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+Classical: ECDHE-X25519 + ED25519,10.0,0.3,0.7,0.3,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0

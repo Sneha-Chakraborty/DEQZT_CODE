@@ -5,6 +5,24 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 
+PREFERRED_MODEL_ORDER = [
+    "Static_Rules",
+    "RandomForest",
+    "MLP_Softmax",
+    "LogisticRegression",
+    "IsolationForest",
+    "DEQZT",
+]
+
+DISPLAY_MODEL_NAMES = {
+    "Static_Rules": "Static-Ruled-ZT\n[31]",
+    "RandomForest": "RandomForest-ZT\n[32]",
+    "MLP_Softmax": "SoftmaxRuled-ZT\n[33]",
+    "LogisticRegression": "LogisticRegression-ZT\n[34]",
+    "IsolationForest": "IsolationForest-ZT\n[35]",
+    "DEQZT": "DEQ-ZT",
+}
+
 
 def norm_model_name(s: str) -> str:
     """Normalize model names across csv/json."""
@@ -115,11 +133,11 @@ def main():
     df = df_thr.merge(df_mac, on="model", how="inner")
 
     # enforce preferred order if present
-    preferred = ["IsolationForest", "Static_Rules", "DEQZT"]
+    preferred = PREFERRED_MODEL_ORDER
     df["order"] = df["model"].apply(lambda m: preferred.index(m) if m in preferred else 999)
     df = df.sort_values(["order", "model"]).drop(columns=["order"]).reset_index(drop=True)
 
-    models = df["model"].tolist()
+    models = [DISPLAY_MODEL_NAMES.get(m, m) for m in df["model"].tolist()]
 
     # One figure, three panels (same x-axis)
     fig, axes = plt.subplots(3, 1, figsize=(10, 10), sharex=True)
@@ -147,7 +165,7 @@ def main():
     axes[2].set_ylim(0, 1.0)
     axes[2].set_title("Macro-F1 (higher is better)")
     for i, v in enumerate(df["macro_f1"]):
-        axes[2].text(i, float(v) + 0.01, f"{float(v):.4f}", ha="center", va="bottom", fontsize=10)
+        axes[2].text(i, float(v) + 0.01, f"{float(v):.6f}\n({float(v)*100:.6f}%)", ha="center", va="bottom", fontsize=10)
 
     axes[2].set_xticklabels(models, rotation=20, ha="right")
     plt.tight_layout(rect=[0, 0, 1, 0.96])

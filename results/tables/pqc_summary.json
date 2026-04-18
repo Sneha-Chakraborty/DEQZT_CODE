@@ -1,0 +1,11 @@
+{
+  "rotations_tested": 25,
+  "avg_rotation_time_ms": 5.132875991985202,
+  "p50_rotation_time_ms": 4.0311000775545835,
+  "p95_rotation_time_ms": 6.000899989157915,
+  "avg_ciphertext_bytes": 1088.0,
+  "avg_signature_bytes": 3309.0,
+  "avg_total_wire_bytes": 4397.0,
+  "verify_ok_rate": 1.0,
+  "skipped": false
+}

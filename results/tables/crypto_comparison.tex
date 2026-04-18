@@ -1,0 +1,9 @@
+\begin{tabular}{lrrrrr}
+\hline
+Scheme & Avg ms & P95 ms & Total bytes & Latency vs PQC & Bytes vs PQC \\
+\hline
+PQC: ML-KEM-768 + ML-DSA-65 & 7.16 & 12.63 & 4397 & 1.00x & 1.00x \\
+Classical: ECDHE-P256 + ECDSA\_P256 & 0.36 & 0.36 & 201 & 19.74x & 21.87x \\
+Classical: ECDHE-X25519 + ED25519 & 0.41 & 0.35 & 128 & 17.43x & 34.35x \\
+\hline
+\end{tabular}

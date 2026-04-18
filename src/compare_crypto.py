@@ -2,7 +2,7 @@
 """
 Convenience wrapper to run crypto comparison from project root:
 
-  python src\compare_crypto.py --pqc-summary results\tables\pqc_summary.json
+  python src/compare_crypto.py --pqc-summary results/tables/pqc_summary.json
 
 Keeps the same CLI as crypto/compare_crypto.py.
 """

@@ -1,0 +1,12 @@
+{
+  "rotations_tested": 200,
+  "avg_rotation_time_ms": 0.3628269978798926,
+  "p50_rotation_time_ms": 0.3479499137029052,
+  "p95_rotation_time_ms": 0.3611150663346052,
+  "avg_kex_wire_bytes": 130.0,
+  "avg_signature_bytes": 71.03,
+  "avg_total_wire_bytes": 201.03,
+  "verify_ok_rate": 1.0,
+  "kex_scheme": "p256",
+  "sig_scheme": "ecdsa_p256"
+}

@@ -1,0 +1,18 @@
+{
+  "feature_overlap": {
+    "train_val": 0,
+    "train_test": 0,
+    "val_test": 0
+  },
+  "session_overlap": {
+    "train_val": 0,
+    "train_test": 0,
+    "val_test": 0
+  },
+  "n_rows": {
+    "train": 169775,
+    "val": 23362,
+    "test": 46863
+  },
+  "suspicious_feature_names": []
+}

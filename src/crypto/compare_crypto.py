@@ -32,6 +32,24 @@ import numpy as np
 import pandas as pd
 
 from crypto.benchmark_classical import bench_classical
+from pqc.benchmark_pqc import bench_pqc
+
+
+CRYPTO_SCHEME_ORDER = [
+    "Classical: ECDHE-X25519+ED25519\n[36]",
+    "Classical: ECDHE-P256+ECDSA-P256\n[37][38]",
+    "PQC: ML-KEM-768 + ML-DSA-65",
+]
+
+
+def _order_crypto_df(df: pd.DataFrame) -> pd.DataFrame:
+    if "Scheme" not in df.columns or df.empty:
+        return df
+    order_map = {name: i for i, name in enumerate(CRYPTO_SCHEME_ORDER)}
+    tmp = df.copy()
+    tmp["__order"] = tmp["Scheme"].astype(str).map(lambda x: order_map.get(x, len(order_map)))
+    tmp = tmp.sort_values(["__order", "Scheme"], kind="mergesort").drop(columns=["__order"])
+    return tmp
 
 
 def _load_json(path: str) -> Dict:
@@ -242,6 +260,98 @@ def _write_latex_control(df: pd.DataFrame, out_path: str) -> None:
         f.write("\n".join(lines) + "\n")
 
 
+
+
+def _plot_scheme_bars(df: pd.DataFrame, col: str, out_path: str, title: str, *, higher_is_better: bool = True) -> None:
+    import matplotlib.pyplot as plt
+    vals = df[col].astype(float).to_numpy()
+    names = df["Scheme"].astype(str).tolist()
+    fig = plt.figure(figsize=(max(8, len(names) * 1.4), 6))
+    ax = fig.add_subplot(111)
+    bars = ax.bar(names, vals)
+    finite = vals[np.isfinite(vals)]
+    percent_like = bool(len(finite)) and float(np.nanmin(finite)) >= 0.0 and float(np.nanmax(finite)) <= 1.05
+    if percent_like:
+        ax.set_ylim(0.0, min(1.0, float(np.nanmax(finite)) * 1.20 + 0.05))
+    else:
+        top = float(np.nanmax(finite)) if len(finite) else 1.0
+        ax.set_ylim(0.0, max(1.0, top * 1.20 + 0.05 * top))
+    best = (float(np.nanmax(finite)) if higher_is_better else float(np.nanmin(finite))) if len(finite) else 0.0
+    off = (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.02
+    for b, v in zip(bars, vals):
+        if np.isfinite(v) and np.isclose(v, best, rtol=0.0, atol=1e-12):
+            b.set_hatch("//")
+            b.set_linewidth(1.5)
+        label = f"{v:.2f}%" if percent_like else f"{v:.3f}"
+        if percent_like:
+            label = f"{v*100:.2f}%"
+        ax.text(b.get_x() + b.get_width()/2.0, v + off, label, ha="center", va="bottom", fontsize=9)
+    ax.set_title(title)
+    ax.set_ylabel(col)
+    ax.tick_params(axis="x", rotation=20)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=300)
+    plt.close(fig)
+
+
+def _plot_crypto_overhead_grouped(df: pd.DataFrame, out_path: str) -> None:
+    """Grouped chart for Avg ms, P95 ms, Total bytes, and Verify ok.
+    Uses two y-axes so verification success remains readable.
+    """
+    import matplotlib.pyplot as plt
+
+    if df.empty:
+        return
+
+    plot_df = _order_crypto_df(df.copy())
+    names = plot_df["Scheme"].astype(str).tolist()
+    x = np.arange(len(names), dtype=float)
+    width = 0.18
+
+    avg_ms = plot_df["Avg ms"].astype(float).to_numpy()
+    p95_ms = plot_df["P95 ms"].astype(float).to_numpy()
+    total_bytes = plot_df["Total bytes"].astype(float).to_numpy()
+    verify_ok = plot_df["Verify ok"].astype(float).to_numpy()
+
+    fig, ax1 = plt.subplots(figsize=(max(10, len(names) * 2.2), 6.5))
+    ax2 = ax1.twinx()
+
+    b1 = ax1.bar(x - 1.5 * width, avg_ms, width, label="Avg latency (ms)")
+    b2 = ax1.bar(x - 0.5 * width, p95_ms, width, label="P95 latency (ms)")
+    b3 = ax1.bar(x + 0.5 * width, total_bytes, width, label="Total byte overhead")
+    b4 = ax2.bar(x + 1.5 * width, verify_ok, width, label="Verification success")
+
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(names, rotation=20)
+    ax1.set_ylabel("Latency / Bytes")
+    ax2.set_ylabel("Verification success")
+    ax2.set_ylim(0.0, 1.05)
+    ax1.set_title("Grouped PQC/Classical Overhead Comparison")
+
+    def _label(ax, bars, percent_like=False):
+        y0, y1 = ax.get_ylim()
+        off = (y1 - y0) * 0.02
+        for bar in bars:
+            v = float(bar.get_height())
+            label = f"{v*100:.2f}%" if percent_like else (f"{v:.2f}" if abs(v) < 1000 else f"{v:.0f}")
+            ax.text(bar.get_x() + bar.get_width()/2.0, v + off, label, ha="center", va="bottom", fontsize=8)
+
+    if np.isfinite(np.nanmax(np.concatenate([avg_ms, p95_ms, total_bytes]))) and np.nanmax(np.concatenate([avg_ms, p95_ms, total_bytes])) > 0:
+        ax1.set_ylim(0.0, np.nanmax(np.concatenate([avg_ms, p95_ms, total_bytes])) * 1.18)
+    _label(ax1, b1)
+    _label(ax1, b2)
+    _label(ax1, b3)
+    _label(ax2, b4, percent_like=True)
+
+    handles1, labels1 = ax1.get_legend_handles_labels()
+    handles2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(handles1 + handles2, labels1 + labels2, loc="upper left")
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=300)
+    plt.close(fig)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pqc-summary", default="results/tables/pqc_summary.json")
@@ -271,9 +381,18 @@ def main():
         )
 
     pqc = _load_json(args.pqc_summary)
+    pqc_needs_bench = bool(pqc.get("skipped", False)) or int(_safe(pqc.get("rotations_tested", 0))) <= 0 or _safe(pqc.get("avg_rotation_time_ms", 0.0)) <= 0.0
+    if pqc_needs_bench:
+        try:
+            pqc = bench_pqc(max(10, int(args.n // 4)))
+            with open(args.pqc_summary, "w", encoding="utf-8") as f:
+                json.dump(pqc, f, indent=2)
+            print(f"[PQC] Re-benchmarked PQC and refreshed {args.pqc_summary}")
+        except Exception as e:
+            print(f"[WARN] Could not benchmark PQC directly: {e}")
     pqc_avg_ms = _safe(pqc.get("avg_rotation_time_ms", 0.0))
     pqc_p95_ms = _safe(pqc.get("p95_rotation_time_ms", pqc.get("avg_rotation_time_ms", 0.0)))
-    pqc_total_bytes = _pqc_total_wire_bytes(pqc)
+    pqc_total_bytes = _safe(pqc.get("avg_total_wire_bytes", 0.0)) or _pqc_total_wire_bytes(pqc)
     pqc_verify = _safe(pqc.get("verify_ok_rate", 0.0))
 
     # -------- Raw overhead table --------
@@ -329,7 +448,7 @@ def main():
             }
         )
 
-    df_over = pd.DataFrame(rows_overhead)
+    df_over = _order_crypto_df(pd.DataFrame(rows_overhead))
 
     csv_path = os.path.join(args.out, "crypto_comparison.csv")
     df_over.to_csv(csv_path, index=False)
@@ -450,7 +569,7 @@ def main():
             )
         )
 
-    df_sec = pd.DataFrame(rows_sec)
+    df_sec = _order_crypto_df(pd.DataFrame(rows_sec))
 
     out_sec_csv = os.path.join(args.out, "crypto_security_control_metrics.csv")
     df_sec.to_csv(out_sec_csv, index=False)
@@ -466,6 +585,14 @@ def main():
     print(f"[OK] Wrote {out_sec_csv}")
     print(f"[OK] Wrote {out_econ_tex}")
     print(f"[OK] Wrote {out_ctrl_tex}")
+
+    out_figs = os.path.join(os.path.dirname(args.out), "figures") if os.path.basename(args.out) == "tables" else os.path.join(args.out, "figures")
+    os.makedirs(out_figs, exist_ok=True)
+    _plot_scheme_bars(df_over, "Verify ok", os.path.join(out_figs, "crypto_verify_ok_bar.png"), "Signature Verification Success", higher_is_better=True)
+    _plot_scheme_bars(df_sec, "p_break_10y", os.path.join(out_figs, "crypto_break_probability_bar.png"), "10-Year Break Probability", higher_is_better=False)
+    _plot_scheme_bars(df_sec, "survival_prob_10y", os.path.join(out_figs, "crypto_survival_probability_bar.png"), "10-Year Survival Probability", higher_is_better=True)
+    _plot_scheme_bars(df_sec, "loss_reduction_pct", os.path.join(out_figs, "crypto_loss_reduction_bar.png"), "Expected Loss Reduction vs Classical", higher_is_better=True)
+    _plot_crypto_overhead_grouped(df_over, os.path.join(out_figs, "crypto_overhead_grouped_bar.png"))
 
     # Print brief summary to stdout
     disp_cols = [

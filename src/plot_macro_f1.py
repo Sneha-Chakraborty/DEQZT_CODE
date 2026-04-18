@@ -7,6 +7,37 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
+PREFERRED_MODEL_ORDER = [
+    "Static_Rules",
+    "RandomForest",
+    "MLP_Softmax",
+    "LogisticRegression",
+    "IsolationForest",
+    "DEQZT",
+]
+
+DISPLAY_MODEL_NAMES = {
+    "Static_Rules": "Static-Ruled-ZT\n[31]",
+    "RandomForest": "RandomForest-ZT\n[32]",
+    "MLP_Softmax": "SoftmaxRuled-ZT\n[33]",
+    "LogisticRegression": "LogisticRegression-ZT\n[34]",
+    "IsolationForest": "IsolationForest-ZT\n[35]",
+    "DEQZT": "DEQ-ZT",
+}
+
+
+def _order_df(df: pd.DataFrame) -> pd.DataFrame:
+    order_map = {m: i for i, m in enumerate(PREFERRED_MODEL_ORDER)}
+    out = df.copy()
+    out["_ord"] = out["model"].astype(str).map(lambda x: order_map.get(x, 999))
+    out = out.sort_values(["_ord", "model"]).drop(columns=["_ord"]).reset_index(drop=True)
+    return out
+
+
+def _display_name(name: str) -> str:
+    return DISPLAY_MODEL_NAMES.get(str(name), str(name))
+
+
 def safe_div(a: float, b: float) -> float:
     return float(a) / float(b) if b else 0.0
 
@@ -61,10 +92,9 @@ def load_metrics(path: Path) -> pd.DataFrame:
 
 
 def plot_macro_f1(df: pd.DataFrame, out_path: Path | None, title: str):
-    # Sort descending
-    df_sorted = df.sort_values("macro_f1", ascending=False).reset_index(drop=True)
+    df_sorted = _order_df(df)
 
-    models = df_sorted["model"].astype(str).tolist()
+    models = [_display_name(m) for m in df_sorted["model"].astype(str).tolist()]
     scores = df_sorted["macro_f1"].to_numpy(dtype=float)
 
     best = np.max(scores) if len(scores) else 0.0
@@ -90,7 +120,7 @@ def plot_macro_f1(df: pd.DataFrame, out_path: Path | None, title: str):
         plt.text(
             b.get_x() + b.get_width() / 2.0,
             v + 0.01,
-            f"{v:.4f}",
+            f"{v:.6f}\n({v*100:.6f}%)",
             ha="center",
             va="bottom",
             fontsize=10,
